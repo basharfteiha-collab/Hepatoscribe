@@ -1044,7 +1044,7 @@ async function extractFromFile(fileObj) {
     ? { type: 'image', source: { type: 'base64', media_type: fileObj.mimeType, data: fileObj.base64 } }
     : { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: fileObj.base64 } };
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/.netlify/functions/anthropic-proxy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1270,7 +1270,7 @@ async function generateNote() {
   document.getElementById('placeholderState').style.display = 'flex';
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/.netlify/functions/anthropic-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
