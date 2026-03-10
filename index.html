@@ -1237,38 +1237,35 @@ Exact JSON shape to return:
 }
 
 function buildUserPrompt() {
-  const age = document.getElementById('age').value.trim();
-  const draftAP = getDraftAP();
-  const sex = document.getElementById('sex').value;
-  const race = document.getElementById('race').value.trim();
-  const visitType = document.getElementById('visitType').value;
+  const age      = document.getElementById('age').value.trim();
+  const sex      = document.getElementById('sex').value;
+  const race     = document.getElementById('race').value.trim();
+  const visitType= document.getElementById('visitType').value;
   const rawInput = document.getElementById('rawInput').value.trim();
-  const meds = document.getElementById('meds').value.trim();
-  const labs = document.getElementById('labs').value.trim();
-  const domains = [...activeDomains].join(', ') || 'general hepatology';
+  const meds     = document.getElementById('meds').value.trim();
+  const labs     = document.getElementById('labs').value.trim();
+  const draftAP  = document.getElementById('draftAP') ? document.getElementById('draftAP').value.trim() : '';
+  const domains  = [...activeDomains].join(', ') || 'general hepatology';
 
-  return `Generate a complete clinical note for the following encounter.
-
-PATIENT: ${age ? age + 'yo' : 'Age not specified'} ${sex || 'sex not specified'}${race ? ', ' + race : ''}
-VISIT TYPE: ${visitType}
-TARGET BILLING LEVEL: ${selectedLevel}
-ACTIVE CLINICAL DOMAINS: ${domains}
-
-RAW ENCOUNTER NOTES / SCRIBE INPUT:
-${rawInput || '[No raw input provided — generate a representative note based on active domains]'}
-
-${meds ? 'CURRENT MEDICATIONS:\n' + meds : ''}
-${labs ? 'RECENT LABS / IMAGING:\n' + labs : ''}
-
-${draftAP ? '\\n\\nPHYSICIAN DRAFT ASSESSMENT & PLAN (use as exact basis — refine language only, preserve all clinical decisions):\\n' + draftAP : ''}
-
-${draftAP ? 'IMPORTANT: Build the A&P STRICTLY from the physician draft above. Preserve every problem and clinical decision. Only expand and polish into billable MDM documentation. Do not add problems not listed.' : 'Generate a comprehensive A&P with numbered problem-based entries.'}
-
-Generate the HPI as flowing clinical prose (no bullet points). Then generate the A&P.\`;
+  let prompt = 'Generate a complete clinical note for the following encounter.\n\n';
+  prompt += 'PATIENT: ' + (age ? age + 'yo' : 'Age not specified') + ' ' + (sex || 'sex not specified') + (race ? ', ' + race : '') + '\n';
+  prompt += 'VISIT TYPE: ' + visitType + '\n';
+  prompt += 'TARGET BILLING LEVEL: ' + selectedLevel + '\n';
+  prompt += 'ACTIVE CLINICAL DOMAINS: ' + domains + '\n\n';
+  prompt += 'RAW ENCOUNTER NOTES / SCRIBE INPUT:\n';
+  prompt += (rawInput || '[No raw input provided — generate based on active domains]') + '\n\n';
+  if (meds) prompt += 'CURRENT MEDICATIONS:\n' + meds + '\n\n';
+  if (labs) prompt += 'RECENT LABS / IMAGING:\n' + labs + '\n\n';
+  if (draftAP) {
+    prompt += 'PHYSICIAN DRAFT ASSESSMENT & PLAN (use as exact basis — refine language only, preserve all clinical decisions and every problem listed):\n';
+    prompt += draftAP + '\n\n';
+    prompt += 'IMPORTANT: Build the A&P STRICTLY from the physician draft above. Preserve every problem and clinical decision. Only expand and polish into billable MDM documentation. Do not add or remove problems.\n\n';
+  } else {
+    prompt += 'Generate a comprehensive A&P with numbered problem-based entries.\n\n';
+  }
+  prompt += 'Generate the HPI as flowing clinical prose (no bullet points). Then generate the A&P.';
+  return prompt;
 }
-
-// helper used in prompt — read draftAP at call time
-function getDraftAP() { return document.getElementById('draftAP') ? document.getElementById('draftAP').value.trim() : ''; }
 
 // ── Main generate function ──
 async function generateNote() {
