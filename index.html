@@ -661,6 +661,82 @@
     border-left: 3px solid var(--accent);
   }
 
+
+  /* ── Assessment Summary Block ── */
+  .ap-summary-block {
+    background: rgba(26,26,46,.04);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: .85rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .ap-summary-header, .ap-problems-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .55rem;
+  }
+  .ap-problems-header {
+    margin-bottom: .75rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .ap-summary-label {
+    font-family: 'Playfair Display', serif;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: .01em;
+  }
+  .ap-summary-text {
+    font-size: .915rem;
+    line-height: 1.75;
+    white-space: pre-wrap;
+  }
+
+  /* ── Copy buttons ── */
+  .btn-copy-section {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: .06em;
+    padding: .22rem .55rem;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: white;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .btn-copy-section:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .ap-problem-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: .3rem;
+  }
+  .ap-problem-header .ap-problem-title { margin-bottom: 0; flex: 1; }
+
+  .btn-copy-problem {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: .2rem .3rem;
+    cursor: pointer;
+    color: var(--ink-light);
+    transition: all .15s;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+  }
+  .btn-copy-problem:hover { border-color: var(--accent2); color: var(--accent2); }
+
   /* Audit footer */
   .note-footer {
     margin-top: 2rem;
@@ -917,6 +993,26 @@
 
         <!-- A&P -->
         <div class="note-section note-section-ap">
+          <!-- Assessment Summary -->
+          <div class="ap-summary-block" id="apSummaryBlock" style="display:none;">
+            <div class="ap-summary-header">
+              <span class="ap-summary-label">Assessment</span>
+              <button class="btn-copy-section" onclick="copySection('apSummaryText', this)" title="Copy Assessment">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+              </button>
+            </div>
+            <div class="note-body ap-summary-text" id="apSummaryText" contenteditable="true"></div>
+          </div>
+
+          <!-- Problem divider -->
+          <div class="ap-problems-header" id="apProblemsHeader" style="display:none;">
+            <span class="ap-summary-label">Plan</span>
+            <button class="btn-copy-section" onclick="copySection('apOutput', this)" title="Copy full Plan">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy All
+            </button>
+          </div>
           <div id="apOutput"></div>
         </div>
 
@@ -1212,9 +1308,9 @@ HPI STRUCTURE (always use flowing paragraphs, not bullets):
 - Close with the clinical synthesis setting up the A&P
 
 ASSESSMENT & PLAN FORMAT:
-- Return as a JSON array of problem objects: [{ "problem": "Title", "body": "narrative text..." }, ...]
-- Number problems in order of clinical priority
-- Each problem: 1-2 sentence assessment + specific plan (ordered tests, continued/adjusted meds with doses, referrals, return precautions, timing of next visit/procedure)
+- The A&P has TWO parts:
+  1. ASSESSMENT SUMMARY: A 2-4 sentence paragraph summarizing the overall clinical picture — who the patient is, their primary diagnoses, current disease status, and the overarching clinical impression. This is NOT a problem list; it is a synthesizing narrative that contextualizes everything.
+  2. PROBLEM LIST: Numbered problems in order of clinical priority. Each problem: 1-2 sentence assessment + specific plan (ordered tests, continued/adjusted meds with doses, referrals, return precautions, surveillance intervals).
 - Hepatology-specific: always address surveillance intervals, decompensation triggers, medication adjustments with rationale, MELD trajectory if applicable
 
 STYLE RULES:
@@ -1233,7 +1329,7 @@ CRITICAL OUTPUT RULES — you MUST follow these exactly:
 4. Escape any double quotes inside string values
 
 Exact JSON shape to return:
-{"hpi":"Paragraph one text.\\n\\nParagraph two text.","problems":[{"problem":"1. Problem Title","body":"Assessment and plan text."}],"billingElements":["MDM: Moderate","Multiple Chronic Conditions","Rx Drug Mgmt","Labs Reviewed","Imaging Reviewed"]}`;
+{"hpi":"Paragraph one text.\\n\\nParagraph two text.","assessmentSummary":"2-4 sentence overall clinical impression paragraph...","problems":[{"problem":"1. Problem Title","body":"Assessment and plan text."}],"billingElements":["MDC: Moderate","Multiple Chronic Conditions","Rx Drug Mgmt","Labs Reviewed","Imaging Reviewed"]}`;
 }
 
 function buildUserPrompt() {
@@ -1383,14 +1479,32 @@ function renderNote(data) {
     hpiEl.textContent = hpiText;
   }
 
-  // A&P
+  // Assessment Summary
+  const summaryBlock = document.getElementById('apSummaryBlock');
+  const summaryText  = document.getElementById('apSummaryText');
+  const problemsHeader = document.getElementById('apProblemsHeader');
+  if (data.assessmentSummary) {
+    summaryText.textContent = data.assessmentSummary;
+    summaryBlock.style.display = 'block';
+    problemsHeader.style.display = 'flex';
+  } else {
+    summaryBlock.style.display = 'none';
+    problemsHeader.style.display = 'none';
+  }
+
+  // A&P Problem List
   const apContainer = document.getElementById('apOutput');
   apContainer.innerHTML = '';
-  (data.problems || []).forEach(p => {
+  (data.problems || []).forEach((p, idx) => {
     const div = document.createElement('div');
     div.className = 'ap-problem';
     div.innerHTML = `
-      <div class="ap-problem-title" contenteditable="true">${escHtml(p.problem)}</div>
+      <div class="ap-problem-header">
+        <div class="ap-problem-title" contenteditable="true">${escHtml(p.problem)}</div>
+        <button class="btn-copy-problem" onclick="copyProblem(this)" title="Copy this problem">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
       <div class="ap-problem-body" contenteditable="true">${escHtml(p.body)}</div>`;
     apContainer.appendChild(div);
   });
@@ -1423,6 +1537,36 @@ function escHtml(str) {
 }
 
 // ── Copy ──
+// ── Section copy helpers ──
+function copySection(elementId, btn) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  // Gather all text content including contenteditable children
+  let text = '';
+  el.querySelectorAll('.ap-problem').forEach(p => {
+    const title = p.querySelector('.ap-problem-title');
+    const body  = p.querySelector('.ap-problem-body');
+    if (title) text += title.textContent.trim() + '\n';
+    if (body)  text += body.textContent.trim() + '\n\n';
+  });
+  if (!text) text = el.textContent.trim();
+  navigator.clipboard.writeText(text.trim()).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.innerHTML = orig, 1800);
+  });
+}
+
+function copyProblem(btn) {
+  const problem = btn.closest('.ap-problem');
+  const title = problem.querySelector('.ap-problem-title').textContent.trim();
+  const body  = problem.querySelector('.ap-problem-body').textContent.trim();
+  navigator.clipboard.writeText(title + '\n' + body).then(() => {
+    btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(() => btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>', 1800);
+  });
+}
+
 function copyNote() {
   const note = document.getElementById('clinicalNote');
   const lines = [];
@@ -1432,7 +1576,11 @@ function copyNote() {
   lines.push('HISTORY OF PRESENT ILLNESS');
   lines.push(document.getElementById('hpiOutput').textContent);
   lines.push('');
-  lines.push('ASSESSMENT & PLAN');
+  lines.push('ASSESSMENT');
+  const summaryEl = document.getElementById('apSummaryText');
+  if (summaryEl && summaryEl.textContent.trim()) lines.push(summaryEl.textContent.trim());
+  lines.push('');
+  lines.push('PLAN');
   document.querySelectorAll('.ap-problem').forEach(p => {
     lines.push(p.querySelector('.ap-problem-title').textContent);
     lines.push(p.querySelector('.ap-problem-body').textContent);
