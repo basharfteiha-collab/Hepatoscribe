@@ -809,6 +809,16 @@
       <textarea id="labs" placeholder="e.g. ALT 52, AST 48, T.bili 1.4, INR 1.3, plt 95k, AFP 3.2, MELD-Na 12…" style="min-height:70px;"></textarea>
     </div>
 
+    <div class="section-label">Your Draft Assessment &amp; Plan <span style="font-size:.6rem;color:var(--gold);letter-spacing:.06em;font-family:'JetBrains Mono',monospace;margin-left:.4rem;">OPTIONAL</span></div>
+    <div class="field-group">
+      <label>List your problems + brief plan — AI will refine into billable format</label>
+      <textarea id="draftAP" class="tall" placeholder="e.g.:
+1. PBC on UDCA — stable, ALP trending down. Continue UDCA, recheck LFTs in 3 months.
+2. Cirrhosis compensated MELD 10 — no decompensation. Due for EGD surveillance. AFP normal.
+3. Fatigue — likely disease-related, rule out hypothyroid. Check TSH.
+4. MASLD — counseled on weight loss, refer to nutrition."></textarea>
+    </div>
+
     <div class="section-label">Physician Signature</div>
     <div class="demo-grid">
       <div class="field-group full">
@@ -1228,6 +1238,7 @@ Exact JSON shape to return:
 
 function buildUserPrompt() {
   const age = document.getElementById('age').value.trim();
+  const draftAP = getDraftAP();
   const sex = document.getElementById('sex').value;
   const race = document.getElementById('race').value.trim();
   const visitType = document.getElementById('visitType').value;
@@ -1249,8 +1260,15 @@ ${rawInput || '[No raw input provided — generate a representative note based o
 ${meds ? 'CURRENT MEDICATIONS:\n' + meds : ''}
 ${labs ? 'RECENT LABS / IMAGING:\n' + labs : ''}
 
-Generate the comprehensive HPI and A&P. Remember: no bullet points in the HPI, all flowing clinical prose. The A&P should have numbered problem-based entries.`;
+${draftAP ? '\\n\\nPHYSICIAN DRAFT ASSESSMENT & PLAN (use as exact basis — refine language only, preserve all clinical decisions):\\n' + draftAP : ''}
+
+${draftAP ? 'IMPORTANT: Build the A&P STRICTLY from the physician draft above. Preserve every problem and clinical decision. Only expand and polish into billable MDM documentation. Do not add problems not listed.' : 'Generate a comprehensive A&P with numbered problem-based entries.'}
+
+Generate the HPI as flowing clinical prose (no bullet points). Then generate the A&P.\`;
 }
+
+// helper used in prompt — read draftAP at call time
+function getDraftAP() { return document.getElementById('draftAP') ? document.getElementById('draftAP').value.trim() : ''; }
 
 // ── Main generate function ──
 async function generateNote() {
@@ -1439,6 +1457,7 @@ function clearAll() {
   document.getElementById('rawInput').value = '';
   document.getElementById('meds').value = '';
   document.getElementById('labs').value = '';
+  document.getElementById('draftAP').value = '';
   document.getElementById('age').value = '';
   document.getElementById('sex').value = '';
   document.getElementById('race').value = '';
